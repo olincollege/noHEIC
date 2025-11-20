@@ -37,7 +37,7 @@ make
 Run the program with the following, replacing YOUR_FILE_PATH with the absolute file path to the .heic image, not including the extension.
 
 ```bash
-./src/noHEIC YOUR_FILE_PATH
+./build/src/noHEIC YOUR_FILE_PATH
 ```
 
 The new .jpeg file will be created in the same directory as the original image.
