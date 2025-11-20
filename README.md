@@ -34,10 +34,10 @@ make
 
 ## Using noHEIC
 
-Run the program with the following, replacing YOUR_FILE_PATH with the absolute file path to the .heic image, not including the extension.
+Ensure you are in the *noHEIC/build/* directory. Run the program with the following command, replacing YOUR_FILE_PATH with the absolute file path to the .heic image, not including the extension.
 
 ```bash
-./build/src/noHEIC YOUR_FILE_PATH
+./src/noHEIC YOUR_FILE_PATH
 ```
 
 The new .jpeg file will be created in the same directory as the original image.
