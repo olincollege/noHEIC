@@ -4,11 +4,8 @@
 #include <libheif/heif.h>
 #include <jpeglib.h>
 
-// Determines level of jpeg compression. 90 is a standard value.
-#define JPEG_QUALITY 90
-
 int main(int argc, char *argv[]) {
-    // Determine input and output file path from command line arguement
+    //----Determine input and output file path from command line arguement----
 
     // Allocate buffers large enough for filepath + extension
     char input_path[256];
@@ -22,21 +19,29 @@ int main(int argc, char *argv[]) {
     strcat(input_path, ".heic");
     strcat(output_path, ".jpeg");
 
+    //----Decode HEIC image----
+
     // Create a pointer to the context struct. This struct acts as the "object"
     // of the heif image, containing all relevant information in memory
     struct heif_context* ctx = heif_context_alloc();
+
+    // Read HEIF image from a file. Set read option to NULL (only option per docs)
     heif_context_read_from_file(ctx, input_path, NULL);
 
     // From the context we created, access the handle of the image
-    // A handle is similar to a pointer to the image data
+    // Handle seems to be essentially a pointer to the image data
     struct heif_image_handle* handle;
-    heif_context_get_primary_image_handle(ctx, &handle);
+    // This function assigns the pointer.
+    heif_context_get_primary_image_handle(ctx, &handle); // &handle is pointer to pointer. 
 
-    // Decode the image and convert to an intermediate representation
+    // Decode the image and convert to the raw pixel representation
     struct heif_image* img;
+    // Use RGB colorspace and chroma for simplicity
+    // Set decoding options to NULL since no cropping or flipping or mirroring
     heif_decode_image(handle, &img, heif_colorspace_RGB, heif_chroma_interleaved_RGB, NULL);
 
     // Determine width and height for jpeg creation
+    // Because of the way we decoded the image, we must use the interleaved channel
     int width  = heif_image_get_width(img, heif_channel_interleaved);
     int height = heif_image_get_height(img, heif_channel_interleaved);
 
@@ -46,12 +51,14 @@ int main(int argc, char *argv[]) {
     // stored in RGB representation
     const uint8_t* data = heif_image_get_plane_readonly(img, heif_channel_interleaved, &stride);
 
-    // Create empty jpeg structs
-    struct jpeg_compress_struct cinfo;
-    struct jpeg_error_mgr jerr;
+    //----Write to JPEG----
 
-    // Create a new file for the output in write binary mode
-    FILE* outfile = fopen(output_path, "wb");
+    // Create empty jpeg structs
+    struct jpeg_compress_struct cinfo; //jpeg object
+    struct jpeg_error_mgr jerr; //error handler
+
+    // Create a new file for the output in write mode
+    FILE* outfile = fopen(output_path, "w");
 
     // Initialize error handler, compression object, and file destination
     cinfo.err = jpeg_std_error(&jerr);
@@ -61,21 +68,28 @@ int main(int argc, char *argv[]) {
     // Set image data parameters
     cinfo.image_width = width;
     cinfo.image_height = height;
-    cinfo.input_components = 3; 
+    cinfo.input_components = 3; // R, G, B
     cinfo.in_color_space = JCS_RGB; 
 
-    // Set compression settings
-    jpeg_set_defaults(&cinfo);
-    jpeg_set_quality(&cinfo, JPEG_QUALITY, TRUE);
+    // Set compression settings to default values
+    jpeg_set_defaults(&cinfo); 
 
-    // Prepare to except rows of data
-    jpeg_start_compress(&cinfo, TRUE);
+    // Begin compression cycle
+    jpeg_start_compress(&cinfo, TRUE); // True since complete datastream
 
-    // Loop over each row of the image and write data
-    while (cinfo.next_scanline < cinfo.image_height) {
+    // Loop over each row of the image and write data. cinfo.next_scanline 
+    // automatically stores the next row to write as a number. Starts at 0
+    // and counts up to the height of the image
+    while (cinfo.next_scanline < cinfo.image_height) { // For each row
+        // row_pointer is a pointer to the first byte in the scanline (row)
+        // At each loop, we make a new pointer by using the the next row 
+        // number to write (cinfo.next_scanline) multiplied by the width of 
+        // the row
         JSAMPROW row_pointer = (JSAMPROW)(data + cinfo.next_scanline * stride);
         jpeg_write_scanlines(&cinfo, &row_pointer, 1);
     }
+
+    //----Clean----
 
     // Clean up jpeg resources
     jpeg_finish_compress(&cinfo);
