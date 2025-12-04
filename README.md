@@ -46,3 +46,4 @@ The new .jpeg file will be created in the same directory as the original image.
 
 - [libheif docs](https://deepwiki.com/strukturag/libheif/5-c-api-reference)
 - [ligjpeg-turbo docs](https://libjpeg-turbo.org/Documentation/Documentation)
+- I took inspiration from [this project](https://ddugan23.github.io/projects/projects-1/)
